@@ -11,7 +11,6 @@ var pic;
 
 
 function create() {
-
     
 
 }
