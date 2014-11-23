@@ -2,8 +2,7 @@
 var game = new Phaser.Game(800, 600, Phaser.AUTO, 'Projeto_game', {preload: preload, create: create, update: update});
 
 var land;
-var tank;
-//var turret;
+var player;
 var currentSpeed = 0;
 var cursors;
 var bullets;
@@ -11,14 +10,18 @@ var fireRate = 100;
 var nextFire = 0;
 var map;
 var layer;
+var facing = 'down';
 
 
 function preload() {
     game.load.tilemap('map', 'textures/features.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.image('ground_1x1', 'textures/ground_1x1.png');
     game.load.image('earth', 'textures/earth.png');//textura do campo
-    game.load.atlas('tank', 'textures/tanks.png', 'textures/tanks.json');
+    game.load.spritesheet('player', 'textures/players.png', 80, 80);
     game.load.image('bullet', 'textures/bullet.png');
+    
+    
+    game.load.atlas('enemy', 'textures/enemy-tanks.png', 'textures/tanks.json');
 }
 
 function create() {
@@ -28,79 +31,99 @@ function create() {
     land.fixedToCamera = true;
     map = game.add.tilemap('map');
     map.addTilesetImage('ground_1x1');
-   
-  
+
     map.setCollisionBetween(1, 12);
     layer = map.createLayer('Tile Layer 1');
     //layer.resizeWorld();
 
-    //tank
-    tank = game.add.sprite(400, 300, 'tank', 'tank1');
-    tank.anchor.setTo(0.5, 0.5);
-    //tank.animations.add('move', ['tank1', 'tank2', 'tank3', 'tank4', 'tank5', 'tank6'], 20, true);
+    //player
+    player = game.add.sprite(400, 300, 'player');
+    player.anchor.setTo(0.5, 0.5);
+    player.animations.add('down', [0, 1, 2, 3], 10, true);
+    player.animations.add('left', [4, 5, 6, 7], 10, true);
+    player.animations.add('right', [8, 9, 10, 11], 10, true);
+    player.animations.add('up', [12, 13, 14, 15], 10, true);
+
 
     //  Isso vai forçá-lo a desacelerar e limitar sua velocidade
-    game.physics.enable(tank, Phaser.Physics.ARCADE);
-    tank.body.drag.set(0.2);
-    tank.body.maxVelocity.setTo(400, 400);
-    tank.body.collideWorldBounds = true;
-
-    //canhão
-    //turret = game.add.sprite(50, 50, 'tank', 'turret');
-    //turret.anchor.setTo(0.3, 0.5);
+    game.physics.enable(player, Phaser.Physics.ARCADE);
+    player.body.drag.set(0.2);
+    player.body.maxVelocity.setTo(400, 400);
+    player.body.collideWorldBounds = true;
 
     /*  tiros */
     bullets = game.add.group();
     bullets.enableBody = true;
     bullets.physicsBodyType = Phaser.Physics.ARCADE;
     bullets.createMultiple(3, 'bullet', 0, false);//dispara 3 tiros por vez
-    bullets.setAll('anchor.x', 0.5);
+    bullets.setAll('anchor.x', -0.5);
     bullets.setAll('anchor.y', 0.5);
     bullets.setAll('outOfBoundsKill', true);
     bullets.setAll('checkWorldBounds', true);
 
     //insere no topo
-    tank.bringToTop();
-    //turret.bringToTop();
-    
+    player.bringToTop();
     cursors = game.input.keyboard.createCursorKeys();
-   
+
 }
 
 function update() {
-    game.physics.arcade.collide(tank, layer);
-    
-    //movimentos do tank
+    game.physics.arcade.collide(player, layer);
+
+    player.body.velocity.x = 0;
+    player.body.velocity.y = 0;
+    //movimentos do personagem
     if (cursors.left.isDown) {
-        tank.angle -= 4;
+        player.body.velocity.x = -150;
+        if (facing !== 'left') {
+            player.animations.play('left');
+            facing = 'left';
+        }
     }
     else if (cursors.right.isDown) {
-        tank.angle += 4;
-    }
+        player.body.velocity.x = 150;
 
-    if (cursors.up.isDown) {
-        //  The speed we'll travel at
-        currentSpeed = 300;
-        
+        if (facing !== 'right') {
+            player.animations.play('right');
+            facing = 'right';
+        }
     }
-    else {
-        if (currentSpeed > 0) {
-            currentSpeed -= 4;
+    else if (cursors.up.isDown) {
+        player.body.velocity.y = -150;
+
+        if (facing !== 'up') {
+            player.animations.play('up');
+            facing = 'up';
+        }
+    }
+    else if (cursors.down.isDown) {
+        player.body.velocity.y = 150;
+
+        if (facing !== 'down') {
+            player.animations.play('down');
+            facing = 'down';
+        }
+    } else {
+        if (facing !== 'idle') {
+            player.animations.stop();
+
+            if (facing === 'left') {
+                player.frame = 4;
+            }
+            else if (facing === 'right') {
+                player.frame = 8;
+            }
+            else if (facing === 'down') {
+                player.frame = 0;
+            } else {
+                player.frame = 12;
+            }
+
+            facing = 'idle';
         }
     }
 
-    if (currentSpeed > 0)
-    {
-        game.physics.arcade.velocityFromRotation(tank.rotation, currentSpeed, tank.body.velocity);
-    }
-
-    //turret.x = tank.x;
-    //turret.y = tank.y;
-
-    //turret.rotation = game.physics.arcade.angleToPointer(turret);
-
-    if (game.input.activePointer.isDown)
-    {
+    if (game.input.activePointer.isDown) {
         fire();
     }
 
@@ -108,12 +131,10 @@ function update() {
 
 function fire() {
 
-    if (game.time.now > nextFire && bullets.countDead() > 0)
-    {
+    if (game.time.now > nextFire && bullets.countDead() > 0) {
         nextFire = game.time.now + fireRate;
         var bullet = bullets.getFirstExists(false);
-        //bullet.reset(turret.x, turret.y);
-        bullet.reset(tank.x, tank.y);
+        bullet.reset(player.x, player.y);
         bullet.rotation = game.physics.arcade.moveToPointer(bullet, 1000, game.input.activePointer, 400);
     }
 
