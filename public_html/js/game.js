@@ -12,6 +12,11 @@ var map;
 var layer;
 var facing = 'down';
 
+//inimigos
+var enemies;
+
+var enemiesTotal = 0;
+var enemiesAlive = 0;
 
 function preload() {
     game.load.tilemap('map', 'textures/features.json', null, Phaser.Tilemap.TILED_JSON);
@@ -19,9 +24,7 @@ function preload() {
     game.load.image('earth', 'textures/earth.png');//textura do campo
     game.load.spritesheet('player', 'textures/players.png', 80, 80);
     game.load.image('bullet', 'textures/bullet.png');
-    
-    
-    game.load.atlas('enemy', 'textures/enemy-tanks.png', 'textures/tanks.json');
+    game.load.spritesheet('enemy', 'textures/players.png', 80, 80);
 }
 
 function create() {
@@ -60,14 +63,23 @@ function create() {
     bullets.setAll('anchor.y', 0.5);
     bullets.setAll('outOfBoundsKill', true);
     bullets.setAll('checkWorldBounds', true);
+    
+    //inimigos
+    enemies = [];
+    enemiesTotal = 5;
+    enemiesAlive = 5;
+
+    for (var i = 0; i < enemiesTotal; i++){
+        enemies.push(new EnemyTank(i, game, player, layer));
+    }
 
     //insere no topo
     player.bringToTop();
     cursors = game.input.keyboard.createCursorKeys();
-
 }
 
 function update() {
+    
     game.physics.arcade.collide(player, layer);
 
     player.body.velocity.x = 0;
@@ -129,11 +141,17 @@ function update() {
 
 }
 
+
+
+
+
+
 function fire() {
 
     if (game.time.now > nextFire && bullets.countDead() > 0) {
         nextFire = game.time.now + fireRate;
         var bullet = bullets.getFirstExists(false);
+        
         bullet.reset(player.x, player.y);
         bullet.rotation = game.physics.arcade.moveToPointer(bullet, 1000, game.input.activePointer, 400);
     }
