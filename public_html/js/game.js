@@ -14,7 +14,6 @@ var facing = 'down';
 
 //inimigos
 var enemies;
-
 var enemiesTotal = 0;
 var enemiesAlive = 0;
 
@@ -34,12 +33,11 @@ function create() {
     land.fixedToCamera = true;
     map = game.add.tilemap('map');
     map.addTilesetImage('ground_1x1');
-
     map.setCollisionBetween(1, 12);
     layer = map.createLayer('Tile Layer 1');
-    //layer.resizeWorld();
+   
 
-    //player
+    //inserir player com animação
     player = game.add.sprite(400, 300, 'player');
     player.anchor.setTo(0.5, 0.5);
     player.animations.add('down', [0, 1, 2, 3], 10, true);
@@ -63,14 +61,15 @@ function create() {
     bullets.setAll('anchor.y', 0.5);
     bullets.setAll('outOfBoundsKill', true);
     bullets.setAll('checkWorldBounds', true);
-    
+
     //inimigos
     enemies = [];
-    enemiesTotal = 5;
-    enemiesAlive = 5;
+    enemiesTotal = 1;
+    enemiesAlive = 1;
 
-    for (var i = 0; i < enemiesTotal; i++){
-        enemies.push(new EnemyTank(i, game, player, layer));
+    for (var i = 0; i < enemiesTotal; i++) {
+        enemies.push(new EnemyMonster(i, game, player, layer));
+        
     }
 
     //insere no topo
@@ -79,12 +78,26 @@ function create() {
 }
 
 function update() {
-    
     game.physics.arcade.collide(player, layer);
-
+    
+    //faz o player não ficar "flutuando"
     player.body.velocity.x = 0;
     player.body.velocity.y = 0;
-    //movimentos do personagem
+
+    //game.physics.arcade.overlap(player, null, this);
+    enemiesAlive = 0;
+
+    for (var i = 0; i < enemies.length; i++)
+    {
+        if (enemies[i].alive)
+        {
+            enemiesAlive++;
+            game.physics.arcade.collide(player, enemies[i].monster); //colisão entre inimigo e player
+            game.physics.arcade.collide(enemies[i].monster, layer); //colisão entre inimigo e paredes
+        }
+    }
+
+    //movimentos do player
     if (cursors.left.isDown) {
         player.body.velocity.x = -150;
         if (facing !== 'left') {
@@ -138,20 +151,13 @@ function update() {
     if (game.input.activePointer.isDown) {
         fire();
     }
-
 }
 
 
-
-
-
-
 function fire() {
-
     if (game.time.now > nextFire && bullets.countDead() > 0) {
         nextFire = game.time.now + fireRate;
         var bullet = bullets.getFirstExists(false);
-        
         bullet.reset(player.x, player.y);
         bullet.rotation = game.physics.arcade.moveToPointer(bullet, 1000, game.input.activePointer, 400);
     }

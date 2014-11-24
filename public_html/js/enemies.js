@@ -1,39 +1,33 @@
-EnemyTank = function (index, game, player, layer) {
+EnemyMonster = function (index, game, player) {
 
-    var x = game.world.randomX;
-    var y = game.world.randomY;
+    //var x = game.world.randomX;
+    //var y = game.world.randomY;
+    
+    var x = 100;
+    var y = 300;
 
     this.game = game;
     this.player = player;
     this.alive = true;
 
-    this.tank = game.add.sprite(x, y, 'enemy', 1);
-    this.tank.anchor.set(0.5, 0.5);
-    //this.tank.name = index.toString();
+    this.monster = game.add.sprite(x, y, 'enemy', 1);
+    this.monster.anchor.set(0.5, 0.5);
+    //this.monster.name = index.toString();
 
-    this.game.physics.enable(this.tank, Phaser.Physics.ARCADE);
-    this.tank.body.drag.set(0.2);
-    this.tank.body.collideWorldBounds = true;
-    this.tank.body.bounce.setTo(1, 1);
-    //this.game.physics.arcade.velocityFromRotation(this.tank.rotation, 100, this.tank.body.velocity);
+    this.game.physics.enable(this.monster, Phaser.Physics.ARCADE);
+    this.monster.body.drag.set(0.2);
+    this.monster.body.bounce.setTo(1, 1);
+    this.game.physics.arcade.velocityFromRotation(this.monster.rotation, 100, this.monster.body.velocity);
+    
+  
 };
 
-EnemyTank.prototype.update = function () {
+EnemyMonster.prototype.update = function () {
     
     
 };
 
-EnemyTank.prototype.damage = function () {
+EnemyMonster.prototype.damage = function () {
 
-    this.health -= 1;
-
-    if (this.health <= 0)
-    {
-        this.alive = false;
-        this.tank.kill();
-        return true;
-    }
-
-    return false;
 
 };
