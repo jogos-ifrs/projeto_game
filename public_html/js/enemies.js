@@ -12,7 +12,7 @@ EnemyMonster = function (index, game, player) {
 
     this.monster = game.add.sprite(x, y, 'enemy', 1);
     this.monster.anchor.set(0.5, 0.5);
-    //this.monster.name = index.toString();
+    this.monster.name = index.toString();
 
     this.game.physics.enable(this.monster, Phaser.Physics.ARCADE);
     this.monster.body.drag.set(0.2);
@@ -24,10 +24,9 @@ EnemyMonster = function (index, game, player) {
 
 EnemyMonster.prototype.update = function () {
     
-    
 };
 
 EnemyMonster.prototype.damage = function () {
-
-
+    this.monster.kill();
+    return true;
 };

@@ -16,6 +16,7 @@ var facing = 'down';
 var enemies;
 var enemiesTotal = 0;
 var enemiesAlive = 0;
+var explosions;
 
 function preload() {
     game.load.tilemap('map', 'textures/features.json', null, Phaser.Tilemap.TILED_JSON);
@@ -24,6 +25,7 @@ function preload() {
     game.load.spritesheet('player', 'textures/players.png', 80, 80);
     game.load.image('bullet', 'textures/bullet.png');
     game.load.spritesheet('enemy', 'textures/players.png', 80, 80);
+    game.load.spritesheet('kaboom', 'textures/explosion.png', 64, 64, 23);
 }
 
 function create() {
@@ -35,7 +37,7 @@ function create() {
     map.addTilesetImage('ground_1x1');
     map.setCollisionBetween(1, 12);
     layer = map.createLayer('Tile Layer 1');
-   
+
 
     //inserir player com animação
     player = game.add.sprite(400, 300, 'player');
@@ -44,6 +46,7 @@ function create() {
     player.animations.add('left', [4, 5, 6, 7], 10, true);
     player.animations.add('right', [8, 9, 10, 11], 10, true);
     player.animations.add('up', [12, 13, 14, 15], 10, true);
+
 
 
     //  Isso vai forçá-lo a desacelerar e limitar sua velocidade
@@ -57,7 +60,7 @@ function create() {
     bullets.enableBody = true;
     bullets.physicsBodyType = Phaser.Physics.ARCADE;
     bullets.createMultiple(3, 'bullet', 0, false);//dispara 3 tiros por vez
-    bullets.setAll('anchor.x', -0.5);
+    bullets.setAll('anchor.x', 0.5);
     bullets.setAll('anchor.y', 0.5);
     bullets.setAll('outOfBoundsKill', true);
     bullets.setAll('checkWorldBounds', true);
@@ -67,19 +70,30 @@ function create() {
     enemiesTotal = 1;
     enemiesAlive = 1;
 
+
+    explosions = game.add.group();
+    for (var i = 0; i < 10; i++) {
+        var explosionAnimation = explosions.create(0, 0, 'kaboom', [0], false);
+        explosionAnimation.anchor.setTo(0.5, 0.5);
+        explosionAnimation.animations.add('kaboom');
+    }
+
+
     for (var i = 0; i < enemiesTotal; i++) {
         enemies.push(new EnemyMonster(i, game, player, layer));
-        
     }
 
     //insere no topo
     player.bringToTop();
     cursors = game.input.keyboard.createCursorKeys();
+
 }
 
 function update() {
+
+    game.physics.arcade.overlap(layer, bullets, bulletHitWall, null, this); //tiros não passam das paredes
     game.physics.arcade.collide(player, layer);
-    
+
     //faz o player não ficar "flutuando"
     player.body.velocity.x = 0;
     player.body.velocity.y = 0;
@@ -87,12 +101,13 @@ function update() {
     //game.physics.arcade.overlap(player, null, this);
     enemiesAlive = 0;
 
-    for (var i = 0; i < enemies.length; i++)
-    {
-        if (enemies[i].alive)
-        {
+    for (var i = 0; i < enemies.length; i++) {
+        if (enemies[i].alive) {
             enemiesAlive++;
-            game.physics.arcade.collide(player, enemies[i].monster); //colisão entre inimigo e player
+
+            //game.physics.arcade.collide(player, enemies[i].monster)
+            game.physics.arcade.overlap(enemies[i].monster, player, monsterAttack, null, this);
+            game.physics.arcade.overlap(enemies[i].monster, bullets, bulletHitEnemy, null, this);
             game.physics.arcade.collide(enemies[i].monster, layer); //colisão entre inimigo e paredes
         }
     }
@@ -152,6 +167,40 @@ function update() {
         fire();
     }
 }
+
+function bulletHitWall(bullet) {
+    bullet.kill();
+}
+
+
+
+function bulletHitEnemy(monster, bullet) {
+
+    bullet.kill();
+    var destroyed = enemies[monster.name].damage();
+
+    if (destroyed) {
+        //explosions.play('explode', 30, false, true);
+        var explosionAnimation = explosions.getFirstExists(false);
+        explosionAnimation.reset(monster.x, monster.y);
+        explosionAnimation.play('kaboom', 30, false, true);
+    }
+}
+
+function monsterAttack(monster, player) {
+    
+    var destroyed = enemies[monster.name].damage();
+    
+    if (destroyed) {
+        //explosions.play('explode', 30, false, true);
+        var explosionAnimation = explosions.getFirstExists(false);
+        explosionAnimation.reset(monster.x, monster.y);
+        explosionAnimation.play('kaboom', 30, false, true);
+    }
+    
+}
+
+
 
 
 function fire() {
