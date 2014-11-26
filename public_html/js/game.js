@@ -41,7 +41,6 @@ function create() {
     map.setCollisionBetween(1, 12);
     layer = map.createLayer('Tile Layer 1');
 
-
     //inserir player com animação
     player = game.add.sprite(400, 300, 'player');
     player.anchor.setTo(0.5, 0.5);
@@ -68,7 +67,7 @@ function create() {
     bullets.setAll('outOfBoundsKill', true);
     bullets.setAll('checkWorldBounds', true);
 
-    
+
 
 
     explosions = game.add.group();
@@ -80,16 +79,15 @@ function create() {
 
     //inimigos
     enemies = [];
-    enemiesTotal = 1;
-    enemiesAlive = 1;
+    enemiesTotal = 5;
+    enemiesAlive = 5;
+
     
-    var valueX =200;
-    var valueY = 200;
 
     for (var i = 0; i < enemiesTotal; i++) {
-        
-        enemies.push(new EnemyMonster(i, game, player, valueX, valueY));
+        enemies.push(new EnemyMonster(i, game, player, coordenada()));
     }
+
 
     //insere no topo
     player.bringToTop();
@@ -107,25 +105,33 @@ function update() {
     player.body.velocity.y = 0;
 
     enemiesAlive = 0;
+
+
     for (var i = 0; i < enemies.length; i++) {
+
+
         if (enemies[i].alive) {
             enemiesAlive++;
             game.physics.arcade.overlap(enemies[i].monster, player, monsterAttack, null, this);
             game.physics.arcade.overlap(enemies[i].monster, bullets, bulletHitEnemy, null, this);
             game.physics.arcade.collide(enemies[i].monster, layer); //colisão entre inimigo e paredes
             enemies[i].update();
+            
+            //moveToXY(enemies[i], 400, 400,10);
         }
     }
 
+
+
     //movimentos do player
-    if (cursors.left.isDown) {
+    if (cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
         player.body.velocity.x = -150;
         if (facing !== 'left') {
             player.animations.play('left');
             facing = 'left';
         }
     }
-    else if (cursors.right.isDown) {
+    else if (cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
         player.body.velocity.x = 150;
 
         if (facing !== 'right') {
@@ -133,7 +139,7 @@ function update() {
             facing = 'right';
         }
     }
-    else if (cursors.up.isDown) {
+    else if (cursors.up.isDown || game.input.keyboard.isDown(Phaser.Keyboard.W)) {
         player.body.velocity.y = -150;
 
         if (facing !== 'up') {
@@ -141,7 +147,7 @@ function update() {
             facing = 'up';
         }
     }
-    else if (cursors.down.isDown) {
+    else if (cursors.down.isDown || game.input.keyboard.isDown(Phaser.Keyboard.S)) {
         player.body.velocity.y = 150;
 
         if (facing !== 'down') {
@@ -170,9 +176,16 @@ function update() {
 
     //player só atira se clicar no mouse e possuir vida
     if (game.input.activePointer.isDown && health > 0) {
-        
+
         fire();
     }
+
+
+   
+
+
+
+
 }
 
 //quando atira na parede o fogo não a ultrapassa
@@ -190,16 +203,16 @@ function bulletHitEnemy(monster, bullet) {
         var explosionAnimation = explosions.getFirstExists(false);
         explosionAnimation.reset(monster.x, monster.y);
         explosionAnimation.play('kaboom', 30, false, true);
-        
+
     }
 }
 
 function monsterAttack(monster, player) {
     health -= 1;
-    
-    if (health <= 0){
+
+    if (health <= 0) {
         alive = false;
-        player.kill();   
+        player.kill();
         var explosionAnimation = explosions.getFirstExists(false);
         explosionAnimation.reset(player.x, player.y);
         explosionAnimation.play('kaboom', 30, false, true);
@@ -210,7 +223,7 @@ function monsterAttack(monster, player) {
         explosionAnimation.reset(monster.x, monster.y);
         explosionAnimation.play('kaboom', 30, false, true);
     }
-    
+
 }
 
 
@@ -223,10 +236,55 @@ function fire() {
     }
 }
 
-function render () {
-    // game.debug.text('Active Bullets: ' + bullets.countLiving() + ' / ' + bullets.length, 32, 32);
+function render() {
+    game.debug.text('Disparos: ' + bullets.countLiving() + ' / ' + bullets.length, 340, 592);
     game.debug.text('Enemies: ' + enemiesAlive + '/' + enemiesTotal, 260, 22);
     game.debug.text('Health: ' + health + '/' + 3, 430, 22);
 }
 
 
+
+
+function coordenada() {
+    
+    var enemyInitialCoordinate = new Object();
+
+    var sorteio = Math.floor((Math.random() * 6) + 1);
+
+    switch (sorteio) {
+        case 1:
+            //entrada esquerda
+            enemyInitialCoordinate.x = -23;
+            enemyInitialCoordinate.y = 300;
+            break;
+        case 2:
+            //entrada direita
+            enemyInitialCoordinate.x = 823;
+            enemyInitialCoordinate.y = 300;
+            break;
+        case 3:
+            //entrada superior esquerda
+            enemyInitialCoordinate.x = 210;
+            enemyInitialCoordinate.y = -25;
+            break;
+        case 4:
+            //entrada superior direita
+            enemyInitialCoordinate.x = 594;
+            enemyInitialCoordinate.y = -25;
+            break;
+        case 5:
+            //entrada inferior esquerda
+            enemyInitialCoordinate.x = 210;
+            enemyInitialCoordinate.y = 623;
+            break;
+        case 6:
+            //entrada inferior direita
+            enemyInitialCoordinate.x = 594;
+            enemyInitialCoordinate.y = 623;
+            break;
+    }
+
+
+
+    return enemyInitialCoordinate;
+}
