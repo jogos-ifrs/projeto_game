@@ -1,22 +1,25 @@
 
-var game = new Phaser.Game(800, 600, Phaser.AUTO, 'Projeto_game', {preload: preload, create: create, update: update});
+var game = new Phaser.Game(800, 600, Phaser.AUTO, 'Projeto_game', {preload: preload, create: create, update: update, render: render});
 
 var land;
+var map;
+var layer;
 var player;
 var currentSpeed = 0;
 var cursors;
 var bullets;
 var fireRate = 100;
 var nextFire = 0;
-var map;
-var layer;
 var facing = 'down';
+var health = 3;
+var alive = true;
 
 //inimigos
 var enemies;
 var enemiesTotal = 0;
 var enemiesAlive = 0;
 var explosions;
+
 
 function preload() {
     game.load.tilemap('map', 'textures/features.json', null, Phaser.Tilemap.TILED_JSON);
@@ -65,10 +68,7 @@ function create() {
     bullets.setAll('outOfBoundsKill', true);
     bullets.setAll('checkWorldBounds', true);
 
-    //inimigos
-    enemies = [];
-    enemiesTotal = 1;
-    enemiesAlive = 1;
+    
 
 
     explosions = game.add.group();
@@ -78,9 +78,17 @@ function create() {
         explosionAnimation.animations.add('kaboom');
     }
 
+    //inimigos
+    enemies = [];
+    enemiesTotal = 1;
+    enemiesAlive = 1;
+    
+    var valueX =200;
+    var valueY = 200;
 
     for (var i = 0; i < enemiesTotal; i++) {
-        enemies.push(new EnemyMonster(i, game, player, layer));
+        
+        enemies.push(new EnemyMonster(i, game, player, valueX, valueY));
     }
 
     //insere no topo
@@ -98,17 +106,14 @@ function update() {
     player.body.velocity.x = 0;
     player.body.velocity.y = 0;
 
-    //game.physics.arcade.overlap(player, null, this);
     enemiesAlive = 0;
-
     for (var i = 0; i < enemies.length; i++) {
         if (enemies[i].alive) {
             enemiesAlive++;
-
-            //game.physics.arcade.collide(player, enemies[i].monster)
             game.physics.arcade.overlap(enemies[i].monster, player, monsterAttack, null, this);
             game.physics.arcade.overlap(enemies[i].monster, bullets, bulletHitEnemy, null, this);
             game.physics.arcade.collide(enemies[i].monster, layer); //colisão entre inimigo e paredes
+            enemies[i].update();
         }
     }
 
@@ -163,44 +168,50 @@ function update() {
         }
     }
 
-    if (game.input.activePointer.isDown) {
+    //player só atira se clicar no mouse e possuir vida
+    if (game.input.activePointer.isDown && health > 0) {
+        
         fire();
     }
 }
 
+//quando atira na parede o fogo não a ultrapassa
 function bulletHitWall(bullet) {
     bullet.kill();
 }
 
 
-
+//destroi inimigo com tiro
 function bulletHitEnemy(monster, bullet) {
 
     bullet.kill();
     var destroyed = enemies[monster.name].damage();
-
     if (destroyed) {
-        //explosions.play('explode', 30, false, true);
         var explosionAnimation = explosions.getFirstExists(false);
         explosionAnimation.reset(monster.x, monster.y);
         explosionAnimation.play('kaboom', 30, false, true);
+        
     }
 }
 
 function monsterAttack(monster, player) {
+    health -= 1;
     
+    if (health <= 0){
+        alive = false;
+        player.kill();   
+        var explosionAnimation = explosions.getFirstExists(false);
+        explosionAnimation.reset(player.x, player.y);
+        explosionAnimation.play('kaboom', 30, false, true);
+    }
     var destroyed = enemies[monster.name].damage();
-    
     if (destroyed) {
-        //explosions.play('explode', 30, false, true);
         var explosionAnimation = explosions.getFirstExists(false);
         explosionAnimation.reset(monster.x, monster.y);
         explosionAnimation.play('kaboom', 30, false, true);
     }
     
 }
-
-
 
 
 function fire() {
@@ -210,6 +221,12 @@ function fire() {
         bullet.reset(player.x, player.y);
         bullet.rotation = game.physics.arcade.moveToPointer(bullet, 1000, game.input.activePointer, 400);
     }
-
 }
+
+function render () {
+    // game.debug.text('Active Bullets: ' + bullets.countLiving() + ' / ' + bullets.length, 32, 32);
+    game.debug.text('Enemies: ' + enemiesAlive + '/' + enemiesTotal, 260, 22);
+    game.debug.text('Health: ' + health + '/' + 3, 430, 22);
+}
+
 

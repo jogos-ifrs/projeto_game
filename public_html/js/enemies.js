@@ -1,18 +1,20 @@
-EnemyMonster = function (index, game, player) {
+EnemyMonster = function (index, game, player, x,y) {
 
     //var x = game.world.randomX;
     //var y = game.world.randomY;
     
-    var x = 100;
-    var y = 300;
+    this.x = x;
+    this.y = y;
 
     this.game = game;
     this.player = player;
     this.alive = true;
+    
 
-    this.monster = game.add.sprite(x, y, 'enemy', 1);
+    this.monster = game.add.sprite(this.x, this.y, 'enemy', 1);
     this.monster.anchor.set(0.5, 0.5);
     this.monster.name = index.toString();
+    
 
     this.game.physics.enable(this.monster, Phaser.Physics.ARCADE);
     this.monster.body.drag.set(0.2);
@@ -27,6 +29,7 @@ EnemyMonster.prototype.update = function () {
 };
 
 EnemyMonster.prototype.damage = function () {
+    this.alive = false;
     this.monster.kill();
     return true;
 };
