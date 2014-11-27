@@ -1,6 +1,7 @@
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, 'Projeto_game', {preload: preload, create: create, update: update, render: render});
-
+var introText;
+var logo;
 var land;
 var map;
 var layer;
@@ -13,7 +14,7 @@ var nextFire = 0;
 var facing = 'down';
 var health = 3;
 var alive = true;
-
+var nivel =1;
 //inimigos
 var enemies;
 var enemiesTotal = 0;
@@ -24,14 +25,19 @@ var explosions;
 function preload() {
     game.load.tilemap('map', 'textures/features.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.image('ground_1x1', 'textures/ground_1x1.png');
-    game.load.image('earth', 'textures/earth.png');//textura do campo
+    game.load.image('earth', 'textures/grass2.png');//textura do campo
     game.load.spritesheet('player', 'textures/players.png', 80, 80);
     game.load.image('bullet', 'textures/bullet.png');
-    game.load.spritesheet('enemy', 'textures/players.png', 80, 80);
+    game.load.spritesheet('enemy1', 'textures/enemy1.png', 48, 64);
+    game.load.spritesheet('enemy2', 'textures/enemy2.png', 96, 96);
+    game.load.spritesheet('urso', 'textures/urso.png', 56, 56);
     game.load.spritesheet('kaboom', 'textures/explosion.png', 64, 64, 23);
+     game.load.image('logo', 'textures/logo.png');
 }
 
 function create() {
+    
+     
     // mapa
     game.world.setBounds(0, 0, 800, 600);
     land = game.add.tileSprite(0, 0, 800, 600, 'earth');
@@ -40,6 +46,11 @@ function create() {
     map.addTilesetImage('ground_1x1');
     map.setCollisionBetween(1, 12);
     layer = map.createLayer('Tile Layer 1');
+    
+    
+    
+    
+    
 
     //inserir player com animação
     player = game.add.sprite(400, 300, 'player');
@@ -77,29 +88,42 @@ function create() {
         explosionAnimation.animations.add('kaboom');
     }
 
-    //inimigos
-    enemies = [];
-    enemiesTotal = 5;
-    enemiesAlive = 5;
-
     
-
-    for (var i = 0; i < enemiesTotal; i++) {
-        enemies.push(new EnemyMonster(i, game, player, coordenada()));
-    }
-
+    //inimigos
+    //enemies = [];
+    enemiesTotal = 2;
+    enemiesAlive = 2;
+    criarInimigos();
 
     //insere no topo
     player.bringToTop();
     cursors = game.input.keyboard.createCursorKeys();
+    
+    
+    introText = game.add.text(game.world.centerX, 565, '- click to start -', { font: "40px Arial", fill: "#ffffff", align: "center" });
+    introText.anchor.setTo(0.5, 0.5);
+
+
+}
+
+function criarInimigos(){
+    enemies = [];
+    for (var i = 0; i < enemiesTotal; i++) {
+        enemies.push(new EnemyMonster(i, game, player, coordenada(), nivel));
+    }
 
 }
 
 function update() {
+    
+    
+    game.input.onDown.add(removeLogo, this);
+       
+    
 
     game.physics.arcade.overlap(layer, bullets, bulletHitWall, null, this); //tiros não passam das paredes
     game.physics.arcade.collide(player, layer);
-
+    
     //faz o player não ficar "flutuando"
     player.body.velocity.x = 0;
     player.body.velocity.y = 0;
@@ -108,20 +132,14 @@ function update() {
 
 
     for (var i = 0; i < enemies.length; i++) {
-
-
         if (enemies[i].alive) {
             enemiesAlive++;
             game.physics.arcade.overlap(enemies[i].monster, player, monsterAttack, null, this);
             game.physics.arcade.overlap(enemies[i].monster, bullets, bulletHitEnemy, null, this);
             game.physics.arcade.collide(enemies[i].monster, layer); //colisão entre inimigo e paredes
             enemies[i].update();
-            
-            //moveToXY(enemies[i], 400, 400,10);
         }
     }
-
-
 
     //movimentos do player
     if (cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
@@ -176,15 +194,16 @@ function update() {
 
     //player só atira se clicar no mouse e possuir vida
     if (game.input.activePointer.isDown && health > 0) {
-
+        introText.visible = false;
         fire();
     }
-
-
-   
-
-
-
+    if(enemiesAlive === 0){
+        enemiesAlive = enemiesTotal+1;
+        enemiesTotal = enemiesAlive;
+        nivel++;
+        criarInimigos();
+        
+    }
 
 }
 
@@ -192,7 +211,6 @@ function update() {
 function bulletHitWall(bullet) {
     bullet.kill();
 }
-
 
 //destroi inimigo com tiro
 function bulletHitEnemy(monster, bullet) {
@@ -203,7 +221,7 @@ function bulletHitEnemy(monster, bullet) {
         var explosionAnimation = explosions.getFirstExists(false);
         explosionAnimation.reset(monster.x, monster.y);
         explosionAnimation.play('kaboom', 30, false, true);
-
+        
     }
 }
 
@@ -216,6 +234,7 @@ function monsterAttack(monster, player) {
         var explosionAnimation = explosions.getFirstExists(false);
         explosionAnimation.reset(player.x, player.y);
         explosionAnimation.play('kaboom', 30, false, true);
+        gameOver();
     }
     var destroyed = enemies[monster.name].damage();
     if (destroyed) {
@@ -240,10 +259,9 @@ function render() {
     game.debug.text('Disparos: ' + bullets.countLiving() + ' / ' + bullets.length, 340, 592);
     game.debug.text('Enemies: ' + enemiesAlive + '/' + enemiesTotal, 260, 22);
     game.debug.text('Health: ' + health + '/' + 3, 430, 22);
+    
+    game.debug.text('Nivel: ' + nivel, 20, 22);
 }
-
-
-
 
 function coordenada() {
     
@@ -283,8 +301,44 @@ function coordenada() {
             enemyInitialCoordinate.y = 623;
             break;
     }
-
-
-
+       
     return enemyInitialCoordinate;
+}
+
+
+function removeLogo () {
+
+    game.input.onDown.remove(removeLogo, this);
+
+    
+
+}
+
+function gameOver () {
+
+    //enemies.body.velocity.setTo(0, 0);
+    logo = game.add.sprite(100, 0, 'logo');
+    introText.text = 'Game Over!';
+    introText.visible = true;
+    
+    game.input.onTap.addOnce(restart,this);
+
+}
+
+
+
+function restart () {
+
+    //  And brings the aliens back from the dead :)
+    health =3;
+    nivel = 1;
+    
+    create();
+
+    
+    //revives the player
+    player.revive();
+    //hides the text
+    introText.visible = false;
+
 }
