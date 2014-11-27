@@ -1,5 +1,7 @@
-EnemyMonster = function (index, game, player, coordenada, nivel) {
+EnemyMonster = function (index, game, player, coordenada, nivel, health) {
 
+    this.inicio = true;
+    this.health = health;
     this.x = coordenada.x;
     this.y = coordenada.y;
     this.nivel = nivel;
@@ -8,6 +10,7 @@ EnemyMonster = function (index, game, player, coordenada, nivel) {
     this.player = player;
     this.alive = true;
 
+if(this.nivel >0){
     if(this.nivel >=4 && this.nivel <10){
         
         this.monster = game.add.sprite(this.x, this.y, 'enemy1', 1);
@@ -48,9 +51,12 @@ EnemyMonster = function (index, game, player, coordenada, nivel) {
     this.monster.body.velocity.y = 0;
     this.monster.body.collideWorldBounds = true; //impedir saída dos monster pelas entradas
     this.game.physics.arcade.velocityFromRotation(this.monster.rotation, 100, this.monster.body.velocity);
+    }
 };
 
 EnemyMonster.prototype.update = function () {
+    
+    if(this.health >0 && this.nivel >=1){
 
     if (this.monster.y < this.player.y + 15 && this.monster.y > this.player.y - 15) { //quando o monster estiver perto da altura do player ele persegue no eixo x
         this.game.physics.arcade.moveToXY(this.monster, this.player.x, this.monster.y, this.nivelVelocidade);
@@ -82,7 +88,7 @@ EnemyMonster.prototype.update = function () {
         }
 
 
-    }
+    }}
 
 };
 

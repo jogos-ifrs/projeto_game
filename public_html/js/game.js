@@ -14,7 +14,8 @@ var nextFire = 0;
 var facing = 'down';
 var health = 3;
 var alive = true;
-var nivel =1;
+var nivel = 0;
+var arbusto;
 //inimigos
 var enemies;
 var enemiesTotal = 0;
@@ -25,32 +26,38 @@ var explosions;
 function preload() {
     game.load.tilemap('map', 'textures/features.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.image('ground_1x1', 'textures/ground_1x1.png');
-    game.load.image('earth', 'textures/grass2.png');//textura do campo
+    game.load.image('grass2', 'textures/grass2.png');//textura do campo
     game.load.spritesheet('player', 'textures/players.png', 80, 80);
     game.load.image('bullet', 'textures/bullet.png');
     game.load.spritesheet('enemy1', 'textures/enemy1.png', 48, 64);
     game.load.spritesheet('enemy2', 'textures/enemy2.png', 96, 96);
     game.load.spritesheet('urso', 'textures/urso.png', 56, 56);
     game.load.spritesheet('kaboom', 'textures/explosion.png', 64, 64, 23);
-     game.load.image('logo', 'textures/logo.png');
+    game.load.image('logo', 'textures/logo.png');
+    game.load.image('arbusto', 'textures/arbusto.png');
 }
 
 function create() {
-    
-     
+
+
     // mapa
     game.world.setBounds(0, 0, 800, 600);
-    land = game.add.tileSprite(0, 0, 800, 600, 'earth');
+    land = game.add.tileSprite(0, 0, 800, 600, 'grass2');
     land.fixedToCamera = true;
     map = game.add.tilemap('map');
     map.addTilesetImage('ground_1x1');
     map.setCollisionBetween(1, 12);
     layer = map.createLayer('Tile Layer 1');
-    
-    
-    
-    
-    
+    var arbustos = 45;
+    for (var i = 0; i <= 5; i++) {
+        arbusto = game.add.sprite(100, arbustos, 'arbusto');
+
+        arbusto = game.add.sprite(300, arbustos + 150, 'arbusto');
+
+        arbusto = game.add.sprite(500, arbustos + 100, 'arbusto');
+        arbustos += 10;
+    }
+
 
     //inserir player com animação
     player = game.add.sprite(400, 300, 'player');
@@ -88,7 +95,7 @@ function create() {
         explosionAnimation.animations.add('kaboom');
     }
 
-    
+
     //inimigos
     //enemies = [];
     enemiesTotal = 2;
@@ -98,32 +105,32 @@ function create() {
     //insere no topo
     player.bringToTop();
     cursors = game.input.keyboard.createCursorKeys();
-    
-    
-    introText = game.add.text(game.world.centerX, 565, '- click to start -', { font: "40px Arial", fill: "#ffffff", align: "center" });
+
+
+    introText = game.add.text(game.world.centerX, 565, '- click to start -', {font: "40px Arial", fill: "#ffffff", align: "center"});
     introText.anchor.setTo(0.5, 0.5);
 
 
 }
 
-function criarInimigos(){
+function criarInimigos() {
     enemies = [];
     for (var i = 0; i < enemiesTotal; i++) {
-        enemies.push(new EnemyMonster(i, game, player, coordenada(), nivel));
+        enemies.push(new EnemyMonster(i, game, player, coordenada(), nivel, health));
     }
 
 }
 
 function update() {
-    
-    
+
+
     game.input.onDown.add(removeLogo, this);
-       
-    
+
+
 
     game.physics.arcade.overlap(layer, bullets, bulletHitWall, null, this); //tiros não passam das paredes
     game.physics.arcade.collide(player, layer);
-    
+
     //faz o player não ficar "flutuando"
     player.body.velocity.x = 0;
     player.body.velocity.y = 0;
@@ -194,15 +201,22 @@ function update() {
 
     //player só atira se clicar no mouse e possuir vida
     if (game.input.activePointer.isDown && health > 0) {
+
+        if (nivel === 0) {
+            nivel = 1;
+
+            
+            create();
+        }
         introText.visible = false;
         fire();
     }
-    if(enemiesAlive === 0){
-        enemiesAlive = enemiesTotal+1;
+    if (enemiesAlive === 0) {
+        enemiesAlive = enemiesTotal + 1;
         enemiesTotal = enemiesAlive;
         nivel++;
         criarInimigos();
-        
+
     }
 
 }
@@ -221,7 +235,7 @@ function bulletHitEnemy(monster, bullet) {
         var explosionAnimation = explosions.getFirstExists(false);
         explosionAnimation.reset(monster.x, monster.y);
         explosionAnimation.play('kaboom', 30, false, true);
-        
+
     }
 }
 
@@ -259,12 +273,12 @@ function render() {
     game.debug.text('Disparos: ' + bullets.countLiving() + ' / ' + bullets.length, 340, 592);
     game.debug.text('Enemies: ' + enemiesAlive + '/' + enemiesTotal, 260, 22);
     game.debug.text('Health: ' + health + '/' + 3, 430, 22);
-    
+
     game.debug.text('Nivel: ' + nivel, 20, 22);
 }
 
 function coordenada() {
-    
+
     var enemyInitialCoordinate = new Object();
 
     var sorteio = Math.floor((Math.random() * 6) + 1);
@@ -301,41 +315,41 @@ function coordenada() {
             enemyInitialCoordinate.y = 623;
             break;
     }
-       
+
     return enemyInitialCoordinate;
 }
 
 
-function removeLogo () {
+function removeLogo() {
 
     game.input.onDown.remove(removeLogo, this);
 
-    
+
 
 }
 
-function gameOver () {
+function gameOver() {
 
     //enemies.body.velocity.setTo(0, 0);
     logo = game.add.sprite(100, 0, 'logo');
     introText.text = 'Game Over!';
     introText.visible = true;
-    
-    game.input.onTap.addOnce(restart,this);
+
+    game.input.onTap.addOnce(restart, this);
 
 }
 
 
 
-function restart () {
+function restart() {
 
     //  And brings the aliens back from the dead :)
-    health =3;
+    health = 3;
     nivel = 1;
-    
+
     create();
 
-    
+
     //revives the player
     player.revive();
     //hides the text
