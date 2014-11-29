@@ -1,6 +1,6 @@
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, 'Projeto_game', {preload: preload, create: create, update: update, render: render});
-var introText;
+var logoInicio;
 var logo;
 var land;
 var map;
@@ -23,6 +23,18 @@ var enemiesAlive = 0;
 var explosions;
 
 
+//text
+var content = [
+    " teste",
+    "Clique para começar"
+];
+
+var introText = 0;
+var index = 0;
+var line = '';
+var textGameOver;
+
+
 function preload() {
     game.load.tilemap('map', 'textures/features.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.image('ground_1x1', 'textures/ground_1x1.png');
@@ -35,9 +47,52 @@ function preload() {
     game.load.spritesheet('kaboom', 'textures/explosion.png', 64, 64, 23);
     game.load.image('logo', 'textures/logo.png');
     game.load.image('arbusto', 'textures/arbusto.png');
+    game.load.audio('sfx', 'audio/lazer.wav');
+    game.load.audio('sfx2', 'audio/explode1.wav');
+    game.load.audio('sfx3', 'audio/perdeu.mp3');
+    game.load.image('cod', 'textures/moonseaj.jpg');
 }
 
+function nextLine() {
+
+    index++;
+
+    if (index < content.length)
+    {
+        line = '';
+        game.time.events.repeat(80, content[index].length + 1, updateLine, this);
+    }
+
+}
+
+function updateLine() {
+
+    if (line.length < content[index].length) {
+        line = content[index].substr(0, line.length + 1);
+        // text.text = line;
+        introText.setText(line);
+    }
+    else {
+        //  Wait 2 seconds then start a new line
+        game.time.events.add(Phaser.Timer.SECOND * 2, nextLine, this);
+    }
+
+}
+
+
 function create() {
+    //audio
+    fx = game.add.audio('sfx');
+    fx.allowMultiple = true;
+    fx.addMarker('tiro', 1, 0.1);
+
+    fx2 = game.add.audio('sfx2');
+    fx2.allowMultiple = true;
+    fx2.addMarker('explosion', 1, 0.1);
+
+    fx3 = game.add.audio('sfx3');
+    
+
 
 
     // mapa
@@ -106,9 +161,14 @@ function create() {
     player.bringToTop();
     cursors = game.input.keyboard.createCursorKeys();
 
-
-    introText = game.add.text(game.world.centerX, 565, '- click to start -', {font: "40px Arial", fill: "#ffffff", align: "center"});
+    logoInicio = game.add.sprite(0, 0, 'cod');
+    //texto
+    introText = game.add.text(game.world.centerX, 380, '', {font: "30pt Courier", fill: "#19cb65", stroke: "#119f4e", strokeThickness: 2});
+    //introText = game.add.text(game.world.centerX, 565, '- click to start -', {font: "40px Arial", fill: "#ffffff", align: "center"});
     introText.anchor.setTo(0.5, 0.5);
+
+    nextLine();
+
 
 
 }
@@ -125,8 +185,6 @@ function update() {
 
 
     game.input.onDown.add(removeLogo, this);
-
-
 
     game.physics.arcade.overlap(layer, bullets, bulletHitWall, null, this); //tiros não passam das paredes
     game.physics.arcade.collide(player, layer);
@@ -200,15 +258,16 @@ function update() {
     }
 
     //player só atira se clicar no mouse e possuir vida
-    if (game.input.activePointer.isDown && health > 0) {
+    if (game.input.activePointer.isDown && health > 0 && line.length === 19) {
+        introText.visible = false;
+        
+        logoInicio.visible = false;
 
         if (nivel === 0) {
             nivel = 1;
-
-            
             create();
         }
-        introText.visible = false;
+
         fire();
     }
     if (enemiesAlive === 0) {
@@ -218,6 +277,17 @@ function update() {
         criarInimigos();
 
     }
+
+
+
+
+
+    if (game.input.activePointer.isDown) {
+        fx.play('tiro');
+    }
+
+
+
 
 }
 
@@ -235,7 +305,7 @@ function bulletHitEnemy(monster, bullet) {
         var explosionAnimation = explosions.getFirstExists(false);
         explosionAnimation.reset(monster.x, monster.y);
         explosionAnimation.play('kaboom', 30, false, true);
-
+        fx2.play('explosion');
     }
 }
 
@@ -248,6 +318,7 @@ function monsterAttack(monster, player) {
         var explosionAnimation = explosions.getFirstExists(false);
         explosionAnimation.reset(player.x, player.y);
         explosionAnimation.play('kaboom', 30, false, true);
+        fx2.play('explosion');
         gameOver();
     }
     var destroyed = enemies[monster.name].damage();
@@ -255,6 +326,7 @@ function monsterAttack(monster, player) {
         var explosionAnimation = explosions.getFirstExists(false);
         explosionAnimation.reset(monster.x, monster.y);
         explosionAnimation.play('kaboom', 30, false, true);
+        fx2.play('explosion');
     }
 
 }
@@ -321,24 +393,44 @@ function coordenada() {
 
 
 function removeLogo() {
-
     game.input.onDown.remove(removeLogo, this);
-
-
-
 }
 
 function gameOver() {
 
-    //enemies.body.velocity.setTo(0, 0);
     logo = game.add.sprite(100, 0, 'logo');
-    introText.text = 'Game Over!';
-    introText.visible = true;
 
-    game.input.onTap.addOnce(restart, this);
+
+    textGameOver = game.add.text(game.world.centerX, game.world.centerY, "Jogar Novamente", {font: "65px Arial", fill: "green", align: "center"});
+    textGameOver.anchor.set(0.5);
+    textGameOver.inputEnabled = true;
+    textGameOver.events.onInputOver.add(over, this);
+
+    textGameOver.events.onInputDown.add(down, this);
+    textGameOver.events.onInputOut.add(out, this);
+    
+    fx3.play();
+    //game.input.onTap.addOnce(restart, this);
+
 
 }
 
+function over(item) {
+    item.fill = "red";
+    item.text = "Jogar Novamente";
+}
+
+function down(item) {
+    item.text = "Jogar Novamente";
+    restart();
+}
+
+function out(item) {
+
+    item.fill = "green";
+    item.text = "Jogar Novamente";
+
+}
 
 
 function restart() {
@@ -346,13 +438,14 @@ function restart() {
     //  And brings the aliens back from the dead :)
     health = 3;
     nivel = 1;
-
     create();
-
-
     //revives the player
     player.revive();
+
     //hides the text
-    introText.visible = false;
+    //introText.visible = false;
+    textGameOver.inputEnabled = false;
+    
+    
 
 }
